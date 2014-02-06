@@ -48,7 +48,8 @@ ip6tables -A INPUT -i eth0 -p tcp --dport 443 -m state --state NEW,ESTABLISHED -
 service iptables save
 service ip6tables save
 
-
+service zebra start
+chkconfig zebra on
 
 Debian:
 
