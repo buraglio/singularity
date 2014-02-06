@@ -1,8 +1,10 @@
+Install postgresql (INSTALL.txt) and configure as such:
+
 postgres
 user root
 database blackhole owned by root
 
-Need to allow apache procress to access to all tables and the seq
+Apache process needs to access to all tables and the seq
 
 sudo su - postgres
 psql -d template1
