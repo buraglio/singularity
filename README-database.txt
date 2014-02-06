@@ -4,6 +4,22 @@ database blackhole owned by root
 
 Need to allow apache procress to access to all tables and the seq
 
+sudo su - postgres
+psql -d template1
+ALTER USER postgres WITH PASSWORD 'some password';
+
+root@singularity singularity]# sudo -u postgres psql blackhole
+psql (8.4.18)
+Type "help" for help.
+
+blackhole=# \dt
+           List of relations
+ Schema |    Name    | Type  |  Owner   
+--------+------------+-------+----------
+ public | blocklist  | table | postgres
+ public | blocklog   | table | postgres
+ public | unblocklog | table | postgres
+(3 rows)
 
 
 create table blocklog(block_id bigserial primary key unique, block_when timestamp not null, block_ipaddress inet not null, block_reverse VARCHAR(256),block_who VARCHAR(32) not null,block_why VARCHAR(256) not null,block_notified boolean DEFAULT false);
