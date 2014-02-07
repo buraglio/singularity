@@ -26,7 +26,7 @@ reboot
 
 For the requirements for singularity to run:
 
-yum install -y httpd postgresql-server postgresql quagga net-snmp perl-Data-Validate-IP perl-NetAddr-IP perl-Email-MIME perl-Net-DNS perl-DBI perl-DBD-Pg
+yum install -y httpd postgresql-server postgresql quagga net-snmp perl-Data-Validate-IP perl-NetAddr-IP perl-Email-MIME perl-Net-DNS perl-DBI perl-DBD-Pg perl-CGI 
 
 service postgresql initdb
 service postgresql start
