@@ -1,4 +1,4 @@
-# Copyright (c) 2014, Jim Eyrich, Nick Buraglio
+# Copyright (c) 2014, James Eyrich, Nick Buraglio
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -36,7 +36,7 @@ use CGI;
 
 my 			$q = new CGI;	# create new CGI object
 print		$q->header;		# create the HTTP header
-print		$q->start_html('NCSA Blackhole System');	# start the HTML
+print		$q->start_html('Singularity Blackhole System');	# start the HTML
 print		$q->center($q->h2('Blackhole Web interface 2'));        # level 2 header
 print "\n";
 print "<p>Username: ".$ENV{'REMOTE_USER'}."</p>\n";
