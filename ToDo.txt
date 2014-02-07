@@ -3,3 +3,7 @@ Add IPv6 Support
 Audit postgres security
 * Change db user
 * tighten postres db access(?)
+
+Add screenshots to instructions
+Create basic web how-to
+Finish VM appliance
