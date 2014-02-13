@@ -1,6 +1,6 @@
 Proof of concept and Production implementation by Nick Buraglio 2008 nick (at) buraglio.com
 Additional functionality by Ryan Harden 2008 
-Awesome front end, database work by Jim Eyrich 2014 eyrich (at) eyrich.com
+Awesome front end, database work by James Eyrich 2014 eyrich (at) eyrich.com
 
 Additional help: 
 http://www.forwardingplane.net/2011/10/black-hole-routing/
