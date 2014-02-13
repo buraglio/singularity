@@ -1,4 +1,4 @@
-# Copyright (c) 2014, Jim Eyrich, Nick Buraglio
+# Copyright (c) 2014, James Eyrich, Nick Buraglio
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
