@@ -1,34 +1,38 @@
-# Copyright (c) 2014, James Eyrich, Nick Buraglio
-# All rights reserved.
-# 
-# Redistribution and use in source and binary forms, with or without
-# modification, are permitted provided that the following conditions are met: 
-# 
-# 1. Redistributions of source code must retain the above copyright notice, this
-#  list of conditions and the following disclaimer. 
-# 2. Redistributions in binary form must reproduce the above copyright notice,
-#   this list of conditions and the following disclaimer in the documentation
-#   and/or other materials provided with the distribution. 
-#
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
-# ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-# (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-# LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
-# ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-# SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-#
-# The views and conclusions contained in the software and documentation are those
-# of the authors and should not be interpreted as representing official policies, 
-# either expressed or implied, of the FreeBSD Project.
-
-
-
-
 #!/usr/bin/perl
+
+
+# Copyright © 2014, University of Illinois/NCSA/Energy Sciences Network. All rights reserved.
+#
+# Developed by: CITES Networking, NCSA Cyber Security and Energy Sciences Network (ESnet)
+# University of Illinois/NCSA/Energy Sciences Network (ESnet)
+# www.illinois.edu,www.ncsa.illinois.edu, www.es.net
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy of this
+# software and associated documentation files (the “Software”), to deal with the
+# Software without restriction, including without limitation the rights to
+# use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
+# of the Software, and to permit persons to whom the Software is furnished to do so,
+# subject to the following conditions:
+#
+# Redistributions of source code must retain the above copyright notice,
+# this list of conditions and the following disclaimers.
+# Redistributions in binary form must reproduce the above copyright notice,
+# this list of conditions and the following disclaimers in the documentation
+# and/or other materials provided with the distribution.
+# Neither the names of CITES, NCSA, University of Illinois, Energy Sciences Network (ESnet), nor the names of its contributors
+# may be used to endorse or promote products derived from this Software
+# without specific prior written permission.
+#
+# THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+# INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. 
+# IN NO EVENT SHALL THE CONTRIBUTORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+# DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS WITH THE SOFTWARE.
+
+
+
+
 use warnings;
 use strict;
 use Data::Validate::IP qw(is_ipv4);
@@ -267,6 +271,7 @@ sub sub_bhr_add
 		#end of database operations	
 		# create null route, config is now saved using the cronjob function
 		system("sudo /usr/bin/vtysh -c \"conf t\" -c \"ip route $ipaddress 255.255.255.255 null0\"");
+		system("logger BHR_BLOCK IP=$ipaddress HOSTNAME=$hostname WHO=$servicename WHY=$reason UNTIL=$endtime");
 		}
 	else
 		{
@@ -312,6 +317,7 @@ sub sub_bhr_remove
 		#end of database operations	for unblock
 		# delete null route, config is now saved using the cronjob function
 		system("sudo /usr/bin/vtysh -c \"conf t\" -c \"no ip route $ipaddress 255.255.255.255 null0\"");
+		system("logger BHR_UNBLOCK IP=$ipaddress WHO=$servicename WHY=$reason");
 		}
 	else
 		{
