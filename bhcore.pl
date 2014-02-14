@@ -42,11 +42,23 @@ use Email::Sender::Simple qw(sendmail);
 use Net::DNS;
 use File::stat;
 use DBI;
+use Config::Simple;
+
+
+#read in config options from an external file
+#config file location
+my $configfile = "/services/blackhole/bin/bhr.cfg";
+my $config = new Config::Simple($configfile);
+my $logtosyslog = $config->param('logtosyslog');
+my $emailfrom = $config->param('emailfrom');
+my $emailto = $config->param('emailto');
+my $emailsubject = $config->param('emailsubject');
+my $db_host = $config->param('databasehost');
+my $db_name = $config->param('databasename');
+
 
 #database connection settings
 #connection uses the user running the script - make sure all users have all privileges on the DB and tables.
-my $db_host = 'localhost';
-my $db_name = 'blackhole';
 my $db = "dbi:Pg:dbname=${db_name};host=${db_host}";
 my $dbh = DBI->connect("dbi:Pg:dbname=$db_name", "", "");
 
@@ -271,7 +283,10 @@ sub sub_bhr_add
 		#end of database operations	
 		# create null route, config is now saved using the cronjob function
 		system("sudo /usr/bin/vtysh -c \"conf t\" -c \"ip route $ipaddress 255.255.255.255 null0\"");
-		system("logger BHR_BLOCK IP=$ipaddress HOSTNAME=$hostname WHO=$servicename WHY=$reason UNTIL=$endtime");
+		if ($logtosyslog)
+			{
+			system("logger BHR_BLOCK IP=$ipaddress HOSTNAME=$hostname WHO=$servicename WHY=$reason UNTIL=$endtime");
+			}
 		}
 	else
 		{
@@ -317,7 +332,10 @@ sub sub_bhr_remove
 		#end of database operations	for unblock
 		# delete null route, config is now saved using the cronjob function
 		system("sudo /usr/bin/vtysh -c \"conf t\" -c \"no ip route $ipaddress 255.255.255.255 null0\"");
-		system("logger BHR_UNBLOCK IP=$ipaddress WHO=$servicename WHY=$reason");
+		if ($logtosyslog)
+			{
+			system("logger BHR_UNBLOCK IP=$ipaddress WHO=$servicename WHY=$reason");
+			}
 		}
 	else
 		{
@@ -694,9 +712,9 @@ sub sub_bhr_digest
 			(
 				header_str =>
 				[
-					From    => 'root@yourhost.net',
-					To      => 'you@domain.com,someone-else@otherdomain.net',
-					Subject => 'Sungularity Black Hole Digest',
+					From    => $emailfrom,
+					To      => $emailto,
+					Subject => $emailsubject,
 				],
 				attributes =>
 				{
@@ -830,3 +848,4 @@ sub sub_reverse_lookup
 		}
 	return $hostname
 	} #end sub_reverse_lookup sub
+
