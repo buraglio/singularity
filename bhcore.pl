@@ -737,6 +737,8 @@ sub sub_bhr_digest
 			q{
 			select distinct block_who
 			from blocklog
+			inner join blocklist
+			on blocklog.block_id = blocklist.blocklist_id
 			};
 		my $sth3 = $dbh->prepare($sql3) or die $dbh->errstr;
 		$sth3->execute() or die $dbh->errstr;
@@ -747,9 +749,11 @@ sub sub_bhr_digest
 			#database operations to count blocks for each who
 			my $sql4 = 
 				q{
-				select count(*)
-				from blocklog
-				where blocklog.block_who = ?
+					select count(*)
+					from blocklog
+					inner join blocklist
+					on blocklog.block_id = blocklist.blocklist_id
+					where blocklog.block_who = ?
 				};
 			my $sth4 = $dbh->prepare($sql4) or die $dbh->errstr;
 			$sth4->execute($whoblockname) or die $dbh->errstr;
