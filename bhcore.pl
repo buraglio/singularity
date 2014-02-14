@@ -50,6 +50,9 @@ use Config::Simple;
 my $configfile = "/services/blackhole/bin/bhr.cfg";
 my $config = new Config::Simple($configfile);
 my $logtosyslog = $config->param('logtosyslog');
+my $logprepend = $config->param('logprepend');
+my $sendstats = $config->param('sendstats');
+my $statprepend = $config->param('statprepend');
 my $emailfrom = $config->param('emailfrom');
 my $emailto = $config->param('emailto');
 my $emailsubject = $config->param('emailsubject');
@@ -285,7 +288,7 @@ sub sub_bhr_add
 		system("sudo /usr/bin/vtysh -c \"conf t\" -c \"ip route $ipaddress 255.255.255.255 null0\"");
 		if ($logtosyslog)
 			{
-			system("logger BHR_BLOCK IP=$ipaddress HOSTNAME=$hostname WHO=$servicename WHY=$reason UNTIL=$endtime");
+			system("logger ".$logprepend."_BLOCK IP=$ipaddress HOSTNAME=$hostname WHO=$servicename WHY=$reason UNTIL=$endtime");
 			}
 		}
 	else
@@ -334,7 +337,7 @@ sub sub_bhr_remove
 		system("sudo /usr/bin/vtysh -c \"conf t\" -c \"no ip route $ipaddress 255.255.255.255 null0\"");
 		if ($logtosyslog)
 			{
-			system("logger BHR_UNBLOCK IP=$ipaddress WHO=$servicename WHY=$reason");
+			system("logger ".$logprepend."_UNBLOCK IP=$ipaddress WHO=$servicename WHY=$reason");
 			}
 		}
 	else
@@ -632,13 +635,13 @@ sub sub_bhr_digest
 			};
 		my $sth2 = $dbh->prepare($sql2) or die $dbh->errstr;
 		$sth2->execute() or die $dbh->errstr;
-		#my $unblockednotify = "";
 		my @unblockednotifyarray;
 		my $unblocknotifyid;
 		while ($unblocknotifyid = $sth2->fetchrow())
 			{
 			push (@unblockednotifyarray,$unblocknotifyid)
 			};
+
 	#end of database operations	
 	
 
@@ -706,6 +709,7 @@ sub sub_bhr_digest
 		} #close while loop	
 	
 	
+	#if we created a non-empty queue email it
 	if ($queuehaddata)
 		{
 		my $message = Email::MIME->create
@@ -725,7 +729,35 @@ sub sub_bhr_digest
 			);
 		sendmail($message);
 		}
-
+	#if send stats is enabled create and log stats
+	if ($sendstats)
+		{
+		#build the list of unique blockers
+ 		my $sql3 =
+			q{
+			select distinct block_who
+			from blocklog
+			};
+		my $sth3 = $dbh->prepare($sql3) or die $dbh->errstr;
+		$sth3->execute() or die $dbh->errstr;
+		my $whoblockname;
+		my $whocount;
+		while ($whoblockname = $sth3->fetchrow())
+			{
+			#database operations to count blocks for each who
+			my $sql4 = 
+				q{
+				select count(*)
+				from blocklog
+				where blocklog.block_who = ?
+				};
+			my $sth4 = $dbh->prepare($sql4) or die $dbh->errstr;
+			$sth4->execute($whoblockname) or die $dbh->errstr;
+			$whocount = $sth4->fetchrow();
+			system("logger ".$logprepend."_STATS who=$whoblockname total_blocked=$whocount");
+			} close #stat log line create while
+		} #end if end stats
+			
 	} #close sub_bhr_digest
 
 sub sub_get_ips
