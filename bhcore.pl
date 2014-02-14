@@ -58,7 +58,10 @@ my $emailto = $config->param('emailto');
 my $emailsubject = $config->param('emailsubject');
 my $db_host = $config->param('databasehost');
 my $db_name = $config->param('databasename');
-
+my $statusfilelocation = $config->param('statusfilelocation');
+my $filenhtmlnotpriv = $config->param('filenhtmlnotpriv');
+my $filecsvnotpriv = $config->param('filecsvnotpriv');
+my $filecsvpriv = $config->param('filecsvpriv');
 
 #database connection settings
 #connection uses the user running the script - make sure all users have all privileges on the DB and tables.
@@ -530,15 +533,19 @@ sub sub_bhr_cronjob
 	my @officialbhdips = @$officialbhdips_ref;
 	my $filehtml="bhlisttemp.html";
 	my $filecsv="bhlisttemp.csv";
-	my $cmdString = "/services/blackhole/www/html/"; 
-	chdir($cmdString)|| die "Error: could not '$cmdString'"; 
+	my $fileprivcsv="bhlistprivtemp.csv";
+	my $cmdString = $statusfilelocation; 
+	chdir($cmdString)|| die "Error: could not '$statusfilelocation'"; 
 	#open new files on top of other ones - not append
 	#using temp files to create new ones and then do cp on top of old one when done
+	#creates a privileged (more info) CSV
 	open(FILEHTML, ">$filehtml") or die "Cannot open $filehtml: $!";
 	open(FILECSV, ">$filecsv") or die "Cannot open $filecsv: $!";
-
+	open(FILEPRIVCSV, ">$fileprivcsv") or die "Cannot open $fileprivcsv: $!";
+	
 	my $htmltable = "<table border=\"1\" width=\"100%\">\n";
-	print FILECSV "ip,who,why,when,expire\n";
+	print FILECSV "ip,when,expire\n";
+	print FILEPRIVCSV "ip,who,why,when,expire\n";
 	my $bhrdcount = 0;
 	my $blackholedip;
 	my $whoblocked;
@@ -576,14 +583,16 @@ sub sub_bhr_cronjob
 				$htmltable .=  "     <td>Block time: ".$months[$whenblockedmonth]." ".$whenblockedday.", ".($whenblockedyear+1900)." ".$whenblockedhour.":".$whenblockedmin.":".$whenblockedsec."</td>\n
 					<td>Blocked indefinitely</td>\n
 					</tr>\n";
-				print FILECSV $blackholedip.",".$whoblocked.",".$whyblocked.",".$whenepochblocked.",0\n";
+				print FILEPRIVCSV $blackholedip.",".$whoblocked.",".$whyblocked.",".$whenepochblocked.",0\n";
+				print FILECSV $blackholedip.",".$whenepochblocked.",0\n";
 				}
 			else
 				{
 				$htmltable .=  "     <td>Block time: ".$months[$whenblockedmonth]." ".$whenblockedday.", ".($whenblockedyear+1900)." ".$whenblockedhour.":".$whenblockedmin.":".$whenblockedsec."</td>\n
 					<td>Block expires: ".$months[$tillblockedmonth]." ".$tillblockedday.", ".($tillblockedyear+1900)." ".$tillblockedhour.":".$tillblockedmin.":".$tillblockedsec."</td>\n
 					</tr>\n";
-				print FILECSV $blackholedip.",".$whoblocked.",".$whyblocked.",".$whenepochblocked.",".$tillepochblocked."\n";
+				print FILEPRIVCSV $blackholedip.",".$whoblocked.",".$whyblocked.",".$whenepochblocked.",".$tillepochblocked."\n";
+				print FILECSV $blackholedip.",".$whenepochblocked.",".$tillepochblocked."\n";
 				}
 
 			}	#close if
@@ -598,10 +607,13 @@ sub sub_bhr_cronjob
 		print FILEHTML "</html>\n";
 		close(FILEHTML);
 		close(FILECSV);
+		close(FILEPRIVCSV);
 		#replace the live files with the new temp ones
-		$cmdString="rm bhlist.html; cp bhlisttemp.html bhlist.html"; 
+		$cmdString="rm $filenhtmlnotpriv; cp bhlisttemp.html $filenhtmlnotpriv"; 
 		system($cmdString)==0 or die "Error: could not '$cmdString'";
-		$cmdString="rm bhlist.csv; cp bhlisttemp.csv bhlist.csv"; 
+		$cmdString="rm $filecsvnotpriv; cp bhlisttemp.csv $filecsvnotpriv"; 
+		system($cmdString)==0 or die "Error: could not '$cmdString'";
+		$cmdString="rm $filecsvpriv; cp bhlistprivtemp.csv $filecsvpriv"; 
 		system($cmdString)==0 or die "Error: could not '$cmdString'";
 	}#close sub cronjob
 
