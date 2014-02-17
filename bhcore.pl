@@ -35,8 +35,9 @@
 
 use warnings;
 use strict;
-use Data::Validate::IP qw(is_ipv4);
-use NetAddr::IP;
+use Data::Validate::IP qw(is_ipv4 is_ipv6);
+#I dont think we are using NetAddr::IP
+#use NetAddr::IP;
 use Email::MIME;
 use Email::Sender::Simple qw(sendmail);
 use Net::DNS;
@@ -141,9 +142,19 @@ else # okay we have number of args in correct range, lets do something. Start by
 		else
 			{
 			$ipaddress=$ARGV[2];
-			if (is_ipv4($ipaddress))
+			if (my $ipversion = sub_what_ip_version($ipaddress))
 				{
-				sub_bhr_add($ipaddress,$servicename,$reason,$howlong,$blocktimedescribed)
+				if ($ipversion == 4)
+					{
+					sub_bhr_add($ipaddress,$servicename,$reason,$howlong,$blocktimedescribed,4)
+					}
+				elsif ($ipversion == 6)
+					{
+					sub_bhr_add($ipaddress,$servicename,$reason,$howlong,$blocktimedescribed,6)
+					}
+				else
+					{
+					}
 				}
 			else
 				{
@@ -181,9 +192,19 @@ else # okay we have number of args in correct range, lets do something. Start by
 			else
 				{
 				$ipaddress=$ARGV[2];
-				if (is_ipv4($ipaddress))
+				if (my $ipversion = sub_what_ip_version($ipaddress))
 					{
-					sub_bhr_remove($ipaddress,$reason,$servicename)
+					if ($ipversion == 4)
+						{
+						sub_bhr_remove($ipaddress,$reason,$servicename,4)
+						}
+					elsif ($ipversion == 6)
+						{
+						sub_bhr_remove($ipaddress,$reason,$servicename,6)
+						}
+					else
+						{
+						}
 					}
 				else
 					{
@@ -255,6 +276,7 @@ sub sub_bhr_add
 	my $reason = shift;
 	my $howlong = shift;
 	my $blocktimedescribed = shift;
+	my $ipversion = shift;
 	my $endtime = "";		
 	if (sub_bhr_check_if_ip_blocked($ipaddress) == 0)
 		{
@@ -288,7 +310,18 @@ sub sub_bhr_add
 		$sth2->execute($ipid,$endtime) or die $dbh->errstr;	
 		#end of database operations	
 		# create null route, config is now saved using the cronjob function
-		system("sudo /usr/bin/vtysh -c \"conf t\" -c \"ip route $ipaddress 255.255.255.255 null0\"");
+		if ($ipversion == 4)
+			{
+			system("sudo /usr/bin/vtysh -c \"conf t\" -c \"ip route $ipaddress 255.255.255.255 null0\"");
+			}
+		elsif ($ipversion == 6)
+			{
+			print ("Place holder for IPv6 route command\n");
+			}
+		else
+			{
+			}
+			
 		if ($logtosyslog)
 			{
 			system("logger ".$logprepend."_BLOCK IP=$ipaddress HOSTNAME=$hostname WHO=$servicename WHY=$reason UNTIL=$endtime");
@@ -305,6 +338,7 @@ sub sub_bhr_remove
 	my $ipaddress = shift;
 	my $reason = shift;
 	my $servicename = shift;
+	my $ipversion = shift;
 	if (sub_bhr_check_if_ip_blocked($ipaddress) == 1)
 		{
 
@@ -337,7 +371,18 @@ sub sub_bhr_remove
 		$sth3->execute($blockid) or die $dbh->errstr;	
 		#end of database operations	for unblock
 		# delete null route, config is now saved using the cronjob function
-		system("sudo /usr/bin/vtysh -c \"conf t\" -c \"no ip route $ipaddress 255.255.255.255 null0\"");
+		if ($ipversion == 4)
+			{
+			system("sudo /usr/bin/vtysh -c \"conf t\" -c \"no ip route $ipaddress 255.255.255.255 null0\"");
+			}
+		elsif ($ipversion == 6)
+			{
+			print ("Place holder for IPv6 route command\n");
+			}
+		else
+			{
+			}
+		
 		if ($logtosyslog)
 			{
 			system("logger ".$logprepend."_UNBLOCK IP=$ipaddress WHO=$servicename WHY=$reason");
@@ -836,19 +881,23 @@ sub sub_read_in_ipaddress_log
 	return ($blockedipinfo[0],$blockedipinfo[1],$blockedipinfo[2],$blockedipinfo[3]);
 	} #close sub read in IP address log
 
-sub sub_check_if_ip_good
+sub sub_what_ip_version
 	{
 	my $ipaddress = shift;
-	#check to see if the IP is good	
+	#check to see what version of IP
 	if (is_ipv4($ipaddress))
 		{
-		return 1;
+		return 4;
+		}
+	elsif (is_ipv6($ipaddress))
+		{
+		return 6;
 		}
 	else
 		{
 		return 0;
 		}
-	} #close sub ip good
+	} #close sub is ip
 
 
 sub sub_is_integer_string
