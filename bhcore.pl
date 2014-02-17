@@ -76,8 +76,9 @@ my $date = localtime;
 my $num_args = $#ARGV + 1;
 if (($num_args == 0) || ($num_args > 5))
 	{
-	print "\nUsage: add|remove|list|reconcile|cronjob|digest Service_Name IPaddress \"Reason\"\(In quotes if more then one word) How_long_in_seconds\n";
+	print "\nUsage: add|remove|list|query|reconcile|cronjob|digest Service_Name IPaddress \"Reason\"\(In quotes if more then one word) How_long_in_seconds\n";
 	print "For Add or Remove must provide servicename, IPaddress, and reason\n";
+	print "For query only provide IPaddress\n";
 	exit;
 	}
 else # okay we have number of args in correct range, lets do something. Start by reading in function ARGV
@@ -219,6 +220,34 @@ else # okay we have number of args in correct range, lets do something. Start by
 		sub_bhr_list();
 		}	
 
+#QUERY fucntion
+		elsif ($scriptfunciton eq "query")
+			{
+			if (!defined $ARGV[1])
+				{
+				print ("No IP provided\n");
+				}
+			else
+				{
+				if (sub_what_ip_version($ARGV[1]))
+					{
+					if (sub_bhr_check_if_ip_blocked($ARGV[1]))
+						{
+						my ($whoblocked,$whyblocked,$whenepochblocked,$tillepochblocked) = sub_read_in_ipaddress_log ($ARGV[1]);
+						print($whoblocked,$whyblocked,$whenepochblocked,$tillepochblocked."\n");
+						}
+					else
+						{
+						print("IP not blackholed\n");
+						}
+					}
+				else
+					{
+					print ("IP is invalid\n");
+					}
+				}
+			}
+		
 #RECONCILE function
 		elsif ($scriptfunciton eq "reconcile")
 		{
@@ -676,7 +705,6 @@ sub sub_bhr_digest
 			};
 		my $sth1 = $dbh->prepare($sql1) or die $dbh->errstr;
 		$sth1->execute() or die $dbh->errstr;
-		#my $blockednotify = "";
 		my @blockednotifyarray;
 		my $blocknotifyid;
 		while ($blocknotifyid = $sth1->fetchrow())
@@ -823,6 +851,7 @@ sub sub_bhr_digest
 
 sub sub_get_ips
 	{
+	#this sub also always checks to see if the router and database are in sync
 	my @subgetipsofficialbhdips =();
 	#figure out what IPs are in the DB that we say are BHd
 	#database list blocked ips
@@ -873,7 +902,7 @@ sub sub_get_ips
 
 sub sub_read_in_ipaddress_log
 	{
-	#database read in information
+	#database read in information for a specific IP
 	my $sql1 =
 		q{
 		select blocklog.block_who,blocklog.block_why,EXTRACT (EPOCH from blocklog.block_when),EXTRACT (EPOCH from blocklist.blocklist_until)
@@ -891,7 +920,7 @@ sub sub_read_in_ipaddress_log
 sub sub_what_ip_version
 	{
 	my $ipaddress = shift;
-	#check to see what version of IP
+	#check to see what version of IP, return 0 if the IP is invalid
 	if (is_ipv4($ipaddress))
 		{
 		return 4;
