@@ -229,12 +229,13 @@ else # okay we have number of args in correct range, lets do something. Start by
 				}
 			else
 				{
+				sub_get_ips();
 				if (sub_what_ip_version($ARGV[1]))
 					{
 					if (sub_bhr_check_if_ip_blocked($ARGV[1]))
 						{
 						my ($whoblocked,$whyblocked,$whenepochblocked,$tillepochblocked) = sub_read_in_ipaddress_log ($ARGV[1]);
-						print($whoblocked,$whyblocked,$whenepochblocked,$tillepochblocked."\n");
+						print($whoblocked." - ".$whyblocked." - ".$whenepochblocked." - ".$tillepochblocked."\n");
 						}
 					else
 						{
@@ -265,7 +266,9 @@ else # okay we have number of args in correct range, lets do something. Start by
 		{
 		sub_bhr_digest();
 		}
-	
+
+#no valid function was provided
+		
 		else
 		{
 		print ("No function performed\n");

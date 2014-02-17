@@ -1,3 +1,5 @@
+#!/usr/bin/perl
+
 # Copyright (c) 2014, James Eyrich, Nick Buraglio
 # All rights reserved.
 #
@@ -25,7 +27,7 @@
 # of the authors and should not be interpreted as representing official policies,
 # either expressed or implied, of the FreeBSD Project.
 
-#!/usr/bin/perl
+
 use strict;
 use warnings;
 #use Data::Validate::IP qw(is_ipv4);
