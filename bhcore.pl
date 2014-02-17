@@ -824,7 +824,6 @@ sub sub_bhr_digest
 sub sub_get_ips
 	{
 	my @subgetipsofficialbhdips =();
-	my @subgetipsforrealbhdips =();
 	#figure out what IPs are in the DB that we say are BHd
 	#database list blocked ips
 	my $sql1 = 
@@ -843,8 +842,16 @@ sub sub_get_ips
 		};
 	@subgetipsofficialbhdips = sort(@subgetipsofficialbhdips);
 	# find what IPs are actually being BHd locally		
-	@subgetipsforrealbhdips=readpipe("/usr/bin/sudo /usr/bin/vtysh -c \"sh ip route static\" | grep \"/32\" | grep Null | awk {\'print \$2\'} |sed -e s/\\\\/32//g | grep -iv 38.32.0.0 | grep -iv 192.0.2.1 | grep -iv 192.0.2.2");
-	chomp(@subgetipsforrealbhdips);
+	#IPv4 null routes first
+	my @subgetipsforrealbhdipsv4=readpipe("/usr/bin/sudo /usr/bin/vtysh -c \"sh ip route static\" | grep \"/32\" | grep Null | awk {\'print \$2\'} |sed -e s/\\\\/32//g | grep -iv 38.32.0.0 | grep -iv 192.0.2.1 | grep -iv 192.0.2.2");
+	chomp(@subgetipsforrealbhdipsv4);
+	#ipv6 null routes  next
+	#need to get this information for quagga
+	#@subgetipsforrealbhdipsv6=readpipe("/usr/bin/sudo /usr/bin/vtysh -c \"sh ip route static\" | grep \"/128\" | grep Null | awk {\'print \$2\'} |sed -e s/\\\\/32//g | grep -iv 38.32.0.0 | grep -iv 192.0.2.1 | grep -iv 192.0.2.2")
+	#empty set for now
+	my @subgetipsforrealbhdipsv6= ();
+	#concatenate the 2 lists
+	my @subgetipsforrealbhdips = (@subgetipsforrealbhdipsv4,@subgetipsforrealbhdipsv6);
 	@subgetipsforrealbhdips = sort(@subgetipsforrealbhdips);
 	
 	#compare the official list of IPs and what the BHR reports is blocked
@@ -897,7 +904,7 @@ sub sub_what_ip_version
 		{
 		return 0;
 		}
-	} #close sub is ip
+	} #close sub what ip version
 
 
 sub sub_is_integer_string
