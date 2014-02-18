@@ -567,7 +567,8 @@ sub sub_bhr_cronjob
 	$sth1->execute() or die $dbh->errstr;
 	while ($unblockip = $sth1->fetchrow())
 	{
-		sub_bhr_remove($unblockip,"Block Time Expired","cronjob");
+		my $ipversion = sub_what_ip_version($unblockip);
+		sub_bhr_remove($unblockip,"Block Time Expired","cronjob",$ipversion);
 	};
 	#end of database operations	
 	
