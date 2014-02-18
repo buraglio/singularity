@@ -473,104 +473,70 @@ sub sub_bhr_list
 
 sub sub_bhr_reconcile
 	{
+	
 	my ($officialbhdips_ref,$forrealbhdips_ref) = sub_get_ips ();
 	my @officialbhdips = @$officialbhdips_ref;
 	my @forrealbhdips = @$forrealbhdips_ref;
-	#if one is missing from real - remove from listed
-	my $blackholedip = "";
-	my $realblackholedip = "";
-	my $isinreal = "";
-	my $isinlist = "";
-	my $listedblackholedip = "";
+	#build hashes
+	my %forrealbhdips;
+	my %officialbhdips;
+	map($officialbhdips{$_}=1,@officialbhdips);
+	map($forrealbhdips{$_}=1,@forrealbhdips);
 	
-	foreach (@officialbhdips)
+	#figure out the differences
+	my @missingfromreal = grep(!defined($forrealbhdips{$_}),@officialbhdips);
+	my @missingfromofficial = grep(!defined($officialbhdips{$_}),@forrealbhdips);
+	my $blackholedip;
+
+	#delete missing from the real BH system
+	foreach (@missingfromreal)
 		{
-		if ($_ ne "")
-			{
-			$blackholedip = $_;
-			$isinreal = 0;
-			foreach (@forrealbhdips)
-				{
-				if ($_ ne "")
-					{
-					$realblackholedip = $_;
-					chomp($realblackholedip);
-					if ($blackholedip eq $realblackholedip)
-						{
-						$isinreal = 1;
-						}
-					}
-				}
-			if ($isinreal == 0)
-				{
-				print("<p>Deleting ".$blackholedip." from the list</p>\n");
-				#database operations for removing from blocklist
-				#figure out the id for the active block
-				my $sql1 = 
-					q{
-					select blocklog.block_id
-					from blocklist
-					inner join blocklog
-					on blocklog.block_id = blocklist.blocklist_id
-					where blocklog.block_ipaddress = ?
-					};
-				my $sth1 = $dbh->prepare($sql1) or die $dbh->errstr;
-				$sth1->execute($blackholedip) or die $dbh->errstr;
-				my $blockid = $sth1->fetchrow();
-				#remove entry from blockedlist
-				my $sql2 =
-				q{
-				DELETE from blocklist where blocklist_id = ?
-				};
-				my $sth2 = $dbh->prepare($sql2) or die $dbh->errstr;
-				$sth2->execute($blockid) or die $dbh->errstr;	
+		$blackholedip = $_;
+		print("<p>Deleting ".$blackholedip." from the list</p>\n");
+		#database operations for removing from blocklist
+		#figure out the id for the active block
+		my $sql1 = 
+			q{
+			select blocklog.block_id
+			from blocklist
+			inner join blocklog
+			on blocklog.block_id = blocklist.blocklist_id
+			where blocklog.block_ipaddress = ?
+			};
+		my $sth1 = $dbh->prepare($sql1) or die $dbh->errstr;
+		$sth1->execute($blackholedip) or die $dbh->errstr;
+		my $blockid = $sth1->fetchrow();
+		#remove entry from blockedlist i
+		my $sql2 =
+			q{
+			DELETE from blocklist where blocklist_id = ?
+			};
+		my $sth2 = $dbh->prepare($sql2) or die $dbh->errstr;
+		$sth2->execute($blockid) or die $dbh->errstr;	
 		#end of database operations	for removing from blocklist
-				}
-			}
 		}
-	#if one is missing from listed - add to listed
-	foreach (@forrealbhdips)
+
+	#add to official if listed in real but not official
+	foreach (@missingfromofficial)
 		{
-		if ($_ ne "")
-			{
-			$blackholedip = $_;
-			$isinlist = 0;
-			foreach (@officialbhdips)
-				{
-				if ($_ ne "")
-					{
-					$listedblackholedip = $_;
-					chomp($listedblackholedip);
-					if ($blackholedip eq $listedblackholedip)
-						{
-						$isinlist = 1;
-						}
-					}
-				}
-			if ($isinlist == 0)
-				{
-				print("<p>Adding ".$blackholedip." to the list</p>\n");
-				my $hostname = sub_reverse_lookup($blackholedip);
-				#database operations for adding to logs
-				my $sql1 = 
-					q{
-					INSERT INTO blocklog (block_when,block_ipaddress,block_reverse,block_who,block_why) VALUES (to_timestamp(?),?,?,?,?) RETURNING block_id
-					};
-				my $sth1 = $dbh->prepare($sql1) or die $dbh->errstr;
-				$sth1->execute(time(),$blackholedip,$hostname,'BHRscript','reconciled') or die $dbh->errstr;
-				my $ipid = $sth1->fetchrow();
-				my $sql2 =
-				q{
-				INSERT INTO blocklist (blocklist_id,blocklist_until) VALUES (?,to_timestamp(?))
-				};
-				my $sth2 = $dbh->prepare($sql2) or die $dbh->errstr;
-				$sth2->execute($ipid,0) or die $dbh->errstr;	
-				#end of database operations	for adding to logs
-						
-				
-				
-				}
-			}
+		$blackholedip = $_;
+		print("<p>Adding ".$blackholedip." to the list</p>\n");
+		my $hostname = sub_reverse_lookup($blackholedip);
+		#database operations for adding to logs
+		my $sql1 = 
+			q{
+			INSERT INTO blocklog (block_when,block_ipaddress,block_reverse,block_who,block_why) VALUES (to_timestamp(?),?,?,?,?) RETURNING block_id
+			};
+		my $sth1 = $dbh->prepare($sql1) or die $dbh->errstr;
+		$sth1->execute(time(),$blackholedip,$hostname,'BHRscript','reconciled') or die $dbh->errstr;
+		my $ipid = $sth1->fetchrow();
+		my $sql2 =
+		q{
+		INSERT INTO blocklist (blocklist_id,blocklist_until) VALUES (?,to_timestamp(?))
+		};
+		my $sth2 = $dbh->prepare($sql2) or die $dbh->errstr;
+		$sth2->execute($ipid,0) or die $dbh->errstr;	
+		#end of database operations	for adding to logs
 		}
 	
 	}#close sub reconcile
