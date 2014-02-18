@@ -44,10 +44,9 @@ print "<p>Function?<br>\n";
 
 
 
-
-print "	<input TYPE=\"radio\" VALUE=\"add\" NAME=\"function_to_perform\" CHECKED>Add - provide IP & Reason<br>\n";
+print "	<input TYPE=\"radio\" VALUE=\"query\" NAME=\"function_to_perform\"CHECKED>Query - provide IP<br>\n";
+print "	<input TYPE=\"radio\" VALUE=\"add\" NAME=\"function_to_perform\">Add - provide IP & Reason<br>\n";
 print "	<input TYPE=\"radio\" VALUE=\"remove\" NAME=\"function_to_perform\">Remove - provide IP & Reason<br>\n";
-print "	<input TYPE=\"radio\" VALUE=\"query\" NAME=\"function_to_perform\">Query - provide IP<br>\n";
 print "	<input TYPE=\"radio\" VALUE=\"reconcile\" NAME=\"function_to_perform\">Reconcile</P>\n";
 print "<table border=\"1\" width=\"100%\">\n";
 print           "<tr>\n".
