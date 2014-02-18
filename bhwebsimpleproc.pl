@@ -31,13 +31,10 @@
 use strict;
 use warnings;
 use CGI;
-use Config::Simple;
 
-#read in config options from an external file
-#config file location
-my $configfile = "/services/blackhole/bin/bhr.cfg";
-my $config = new Config::Simple($configfile);
-my $binlocation = $config->param('binlocaton');
+#bhcore.pl file location
+my $binlocation = "/services/blackhole/bin/";
+
 
 my $q = new CGI;			# create new CGI object
 print		$q->header;		 # create the HTTP header
