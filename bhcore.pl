@@ -785,32 +785,20 @@ sub sub_bhr_digest
 	#if send stats is enabled create and log stats
 	if ($sendstats)
 		{
-		#build the list of unique blockers
+		#build table of unique blockers and counts
  		my $sql3 =
 			q{
-			select distinct block_who
-			from blocklog
-			inner join blocklist
+			select block_who,count(block_who)
+			from blocklog inner join blocklist
 			on blocklog.block_id = blocklist.blocklist_id
+			group by block_who;
 			};
 		my $sth3 = $dbh->prepare($sql3) or die $dbh->errstr;
 		$sth3->execute() or die $dbh->errstr;
 		my $whoblockname;
 		my $whocount;
-		while ($whoblockname = $sth3->fetchrow())
+		while (($whoblockname,$whocount) = $sth3->fetchrow())
 			{
-			#database operations to count blocks for each who
-			my $sql4 = 
-				q{
-					select count(*)
-					from blocklog
-					inner join blocklist
-					on blocklog.block_id = blocklist.blocklist_id
-					where blocklog.block_who = ?
-				};
-			my $sth4 = $dbh->prepare($sql4) or die $dbh->errstr;
-			$sth4->execute($whoblockname) or die $dbh->errstr;
-			$whocount = $sth4->fetchrow();
 			system("logger ".$logprepend."_STATS who=$whoblockname total_blocked=$whocount");
 			} close #stat log line create while
 		} #end if end stats
