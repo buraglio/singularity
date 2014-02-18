@@ -102,7 +102,7 @@ else # okay we have number of args in correct range, lets do something. Start by
 		else
 			{
 			$reason=$ARGV[3];
-			$reason =~ tr/-//d; #using dashes/hypens in the BH log file for separators, need to remove from the reason
+			$reason =~ tr/-//d; #using dashes/hyphens in the BH log file for separators, need to remove from the reason
 			$reason =~ tr/,//d; #using commas in the individual log file for separators, need to remove from the reason
 			}
 		if (!defined $ARGV[1])
@@ -112,8 +112,8 @@ else # okay we have number of args in correct range, lets do something. Start by
 		else
 			{
 			$servicename=$ARGV[1];
-			$servicename =~ tr/-//d; #using dashes/hypens in the BH log file for seperators, need to remove from the reason
-			$servicename =~ tr/,//d; #using commas in the individual log file for seperators, need to remove from the reason
+			$servicename =~ tr/-//d; #using dashes/hyphens in the BH log file for separators, need to remove from the reason
+			$servicename =~ tr/,//d; #using commas in the individual log file for separators, need to remove from the reason
 			}
 	
 		if (!defined $ARGV[4])
@@ -585,7 +585,6 @@ sub sub_bhr_cronjob
 	
 	#do a wr mem on the quagga system - does not happen during the routing changes now.
 	system("sudo /usr/bin/vtysh -c \"wr me\"");
-	
 	#database operations for removing expired blocks
 	#select statement returns IPs that have expired but not epoch 0 for block time
 	my $unblockip = "";

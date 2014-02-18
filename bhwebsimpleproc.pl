@@ -31,6 +31,13 @@
 use strict;
 use warnings;
 use CGI;
+use Config::Simple;
+
+#read in config options from an external file
+#config file location
+my $configfile = "/services/blackhole/bin/bhr.cfg";
+my $config = new Config::Simple($configfile);
+my $binlocation = $config->param('binlocaton');
 
 my $q = new CGI;			# create new CGI object
 print		$q->header;		 # create the HTTP header
@@ -43,7 +50,7 @@ print "<form METHOD=\"POST\" ACTION=\"bhwebsimple.pl\">\n";
 my $scriptfunciton = $q->param('function_to_perform');
 
 	
-	# figure out what fucntion to perform and call the correct sub function.
+	# figure out what function to perform and call the correct sub function.
 	if ($scriptfunciton eq "add")
 		{
 		my $add_ip = $q->param('ip');
@@ -63,7 +70,7 @@ my $scriptfunciton = $q->param('function_to_perform');
 			}
 		else
 			{
-			$add_reason =~ tr/-//d; #using dashes/hypens in the BH log file for separators, need to remove from the reason
+			$add_reason =~ tr/-//d; #using dashes/hyphens in the BH log file for separators, need to remove from the reason
 			$add_reason =~ tr/,//d; #using commas in the individual log file for separators, need to remove from the reason
 			}
 		if ($add_user eq "")
@@ -73,10 +80,10 @@ my $scriptfunciton = $q->param('function_to_perform');
 			}
 		else
 			{
-			$add_user =~ tr/-//d; #using dashes/hypens in the BH log file for separators, need to remove from the reason
+			$add_user =~ tr/-//d; #using dashes/hyphens in the BH log file for separators, need to remove from the reason
 			$add_user =~ tr/,//d; #using commas in the individual log file for separators, need to remove from the reason
 			}	
-		if ($add_duration == "")
+		if ($add_duration eq "")
 			{
 			$howlong = 0; #indefinite
 			$blocktimedescribed = "indefinite";
@@ -111,10 +118,9 @@ my $scriptfunciton = $q->param('function_to_perform');
 		if ($everythingisok)
 			{
 			print "<p>Blocking ".$add_ip." for user ".$add_user." for reason ". $add_reason." for ".$blocktimedescribed."</p>\n";
-			my $bhrcommand = "/services/blackhole/bin/bhcore.pl add ".$add_user." ".$add_ip." \"".$add_reason."\" ".$howlong;
+			my $bhrcommand = $binlocation."bhcore.pl add ".$add_user." ".$add_ip." \"".$add_reason."\" ".$howlong;
 			print "Calling Core BH script<br>\n";
 			print "Executing: ".$bhrcommand."<br>\n";
-			print "BH Core output:<br>\n";
 			open(BHCORE,"$bhrcommand |");
 				while (<BHCORE>)
 				{
@@ -140,8 +146,8 @@ my $scriptfunciton = $q->param('function_to_perform');
 			}
 		else
 			{
-			$remove_user =~ tr/-//d; #using dashes/hypens in the BH log file for seperators, need to remove from the reason
-			$remove_user =~ tr/,//d; #using commas in the individual log file for seperators, need to remove from the reason
+			$remove_user =~ tr/-//d; #using dashes/hyphens in the BH log file for separators, need to remove from the reason
+			$remove_user =~ tr/,//d; #using commas in the individual log file for separators, need to remove from the reason
 			}
 		if ($everythingisok)
 			{
@@ -156,10 +162,9 @@ my $scriptfunciton = $q->param('function_to_perform');
 				else
 					{
 					print "<p>unblocking ".$ipaddress." for: ".$reason." for you user: ".$remove_user."</p>\n";
-					my $bhrcommand = "/services/blackhole/bin/bhcore.pl remove ".$remove_user." ".$ipaddress." \"".$reason."\"";
+					my $bhrcommand = $binlocation."bhcore.pl remove ".$remove_user." ".$ipaddress." \"".$reason."\"";
 					print "Calling Core BH script<br>\n";
 					print "Executing: ".$bhrcommand."<br>\n";
-					print "BH Core output:<br>\n";
 					open(BHCORE,"$bhrcommand |");
 					while (<BHCORE>)
 						{
@@ -176,10 +181,9 @@ my $scriptfunciton = $q->param('function_to_perform');
 		{
 		my $ipaddress = $q->param('ip');
 		print "<p>Querying ".$ipaddress."</p>\n";
-					my $bhrcommand = "/services/blackhole/bin/bhcore.pl query ".$ipaddress;
+					my $bhrcommand = $binlocation."bhcore.pl query ".$ipaddress;
 					print "Calling Core BH script<br>\n";
 					print "Executing: ".$bhrcommand."<br>\n";
-					print "BH Core output:<br>\n";
 					open(BHCORE,"$bhrcommand |");
 					while (<BHCORE>)
 						{
@@ -191,10 +195,10 @@ my $scriptfunciton = $q->param('function_to_perform');
 	elsif ($scriptfunciton eq "reconcile")
 		{
 		#sub_bhr_reconcile();
-		my $bhrcommand = "/services/blackhole/bin/bhcore.pl reconcile";
+		my $bhrcommand = $binlocation."bhcore.pl reconcile";
 		print "Calling Core BH script<br>\n";
 		print "Executing: ".$bhrcommand."<br>\n";
-		print "BH Core output-None is okay for reconcile :<br>\n";
+		print "This may take some time<br>BH Core output-None is okay for reconcile :<br>\n";
 		open(BHCORE,"$bhrcommand |");
 			while (<BHCORE>)
 			{
