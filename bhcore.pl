@@ -396,9 +396,9 @@ sub sub_bhr_remove
 		$sth2->execute($blockid,time(),$servicename,$reason) or die $dbh->errstr;
 		#remove entry from blockedlist
 		my $sql3 =
-		q{
-		DELETE from blocklist where blocklist_id = ?
-		};
+			q{
+			DELETE from blocklist where blocklist_id = ?
+			};
 		my $sth3 = $dbh->prepare($sql3) or die $dbh->errstr;
 		$sth3->execute($blockid) or die $dbh->errstr;	
 		#end of database operations	for unblock
@@ -531,9 +531,9 @@ sub sub_bhr_reconcile
 		$sth1->execute(time(),$blackholedip,$hostname,'BHRscript','reconciled') or die $dbh->errstr;
 		my $ipid = $sth1->fetchrow();
 		my $sql2 =
-		q{
-		INSERT INTO blocklist (blocklist_id,blocklist_until) VALUES (?,to_timestamp(?))
-		};
+			q{
+			INSERT INTO blocklist (blocklist_id,blocklist_until) VALUES (?,to_timestamp(?))
+			};
 		my $sth2 = $dbh->prepare($sql2) or die $dbh->errstr;
 		$sth2->execute($ipid,0) or die $dbh->errstr;	
 		#end of database operations	for adding to logs
@@ -799,7 +799,7 @@ sub sub_bhr_digest
 		my $whocount;
 		while (($whoblockname,$whocount) = $sth3->fetchrow())
 			{
-			system("logger ".$logprepend."_STATS who=$whoblockname total_blocked=$whocount");
+			system("logger ".$logprepend."_STATS WHO=$whoblockname TOTAL_BLOCKED=$whocount");
 			} close #stat log line create while
 		} #end if end stats
 			
