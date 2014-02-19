@@ -564,6 +564,8 @@ sub sub_bhr_cronjob
 	
 	#do a wr mem on the quagga system - does not happen during the routing changes now.
 	system("sudo /usr/bin/vtysh -c \"wr me\"");
+
+
 	#database operations for removing expired blocks
 	#select statement returns IPs that have expired but not epoch 0 for block time
 	my $unblockip = "";
@@ -583,8 +585,11 @@ sub sub_bhr_cronjob
 		my $ipversion = sub_what_ip_version($unblockip);
 		sub_bhr_remove($unblockip,"Block Time Expired","cronjob",$ipversion);
 	};
-	#end of database operations	
 
+	
+	
+	
+	#create list files
 	my $filehtml="bhlisttemp.html";
 	my $filecsv="bhlisttemp.csv";
 	my $fileprivcsv="bhlistprivtemp.csv";
@@ -669,31 +674,51 @@ sub sub_bhr_cronjob
 sub sub_bhr_digest
 	# send the email notification digest
 	{
-	#build the list of blocked IDs that need to be notified
+	#build the list of blocked IDs and info that need to be notified
 	#database operations
 		my $sql1 = 
 			q{
-			select block_id
-			from blocklog
+			select blocklog.block_ipaddress AS ip,
+			blocklog.block_who AS who,
+			blocklog.block_why AS why,
+			blocklog.block_when AS whenblock,
+			blocklist.blocklist_until AS until,
+			blocklist.blocklist_id AS blockid,
+			blocklog.block_reverse AS reverse
+			from blocklist
+			inner join blocklog
+			on blocklog.block_id = blocklist.blocklist_id
 			where not block_notified
+			order by whenblock
 			};
 		my $sth1 = $dbh->prepare($sql1) or die $dbh->errstr;
 		$sth1->execute() or die $dbh->errstr;
+		my $blockactivitycount = $sth1->rows();
 		my @blockednotifyarray;
-		my $blocknotifyid;
-		while ($blocknotifyid = $sth1->fetchrow())
+		my $blockednotifyarrayrow;
+		while ( $blockednotifyarrayrow = $sth1->fetchrow_hashref())
 			{
-			push (@blockednotifyarray,$blocknotifyid)
+			push (@blockednotifyarray,$blockednotifyarrayrow)
 			};
 	#build list of unblocked IDs that need to be notified
 		my $sql2 = 
 			q{
-			select unblock_id
+			select blocklog.block_ipaddress AS ip,
+			unblocklog.unblock_who AS whounblock,
+			unblocklog.unblock_why AS whyunblock,
+			unblock_when AS whenunblock,
+			blocklog.block_reverse as reverse,
+			blocklog.block_who AS whoblock,
+			blocklog.block_why AS whyblock,
+			unblocklog.unblock_id AS unblockid
 			from unblocklog
+			inner join blocklog on blocklog.block_id = unblocklog.unblock_id
 			where not unblock_notified
+			order by whenunblock
 			};
 		my $sth2 = $dbh->prepare($sql2) or die $dbh->errstr;
 		$sth2->execute() or die $dbh->errstr;
+		my $unblockactivitycount = $sth2->rows();
 		my @unblockednotifyarray;
 		my $unblocknotifyid;
 		while ($unblocknotifyid = $sth2->fetchrow())
@@ -706,29 +731,20 @@ sub sub_bhr_digest
 
 	my $queueline = "";
 	my $queuehaddata = 0;
+	my $blocknotifyidline = "";
 	#build email body
 	#print activity counts
-	my $emailbody = "Activity since last digest:\nBlocked: ".scalar (@blockednotifyarray)."\nUnblocked: ".scalar (@unblockednotifyarray)."\n";	
+	my $emailbody = "Activity since last digest:\nBlocked: ".$blockactivitycount."\nUnblocked: ".$unblockactivitycount."\n";	
 	
 	#add blocked notifications to email body
-	foreach (@blockednotifyarray)
+	my $blockrowref;
+	while ($blockrowref = shift(@blockednotifyarray))
 		{
-		#print $_;
+		#indicate we have put into to queue
 		$queuehaddata = 1;
-		#database operations to go get block detail
-		my $sql1 = 
-		q{
-		select blocklog.block_when,blocklog.block_who,blocklog.block_ipaddress,blocklog.block_reverse,blocklog.block_why,blocklist.blocklist_until
-		from blocklist
-		inner join blocklog
-		on blocklog.block_id = blocklist.blocklist_id
-		where blocklog.block_id = ?
-		};
-		my $sth1 = $dbh->prepare($sql1) or die $dbh->errstr;
-		$sth1->execute($_) or die $dbh->errstr;
-		my @blockedipinfo = $sth1->fetchrow_array();
-		my $notifyidline = ("BLOCK - ".$blockedipinfo[0]." - ".$blockedipinfo[1]." - ".$blockedipinfo[2]." - ".$blockedipinfo[3]." - ".$blockedipinfo[4]." - ".$blockedipinfo[5]);
-		$emailbody = $emailbody."\n".$notifyidline;		
+		
+		$blocknotifyidline = ("BLOCK - ".$blockrowref->{whenblock}." - ".$blockrowref->{who}." - ".$blockrowref->{ip}." - ".$blockrowref->{reverse}." - ".$blockrowref->{why}." - ".$blockrowref->{until});
+		$emailbody = $emailbody."\n".$blocknotifyidline;		
 		#alter the log entry to true for notified
 		my $sql2 = 
 			q{
@@ -737,24 +753,16 @@ sub sub_bhr_digest
 			where block_id = ?
 			};
 		my $sth2 = $dbh->prepare($sql2) or die $dbh->errstr;
-		$sth2->execute($_) or die $dbh->errstr;
+		$sth2->execute($blockrowref->{blockid}) or die $dbh->errstr;
 		} #close while loop		
 	#add unblocked notifications to email body
-	foreach (@unblockednotifyarray)
+	my $unblockrowref;
+	while ($unblockrowref = shift(@unblockednotifyarray))
 		{
+		#indicate we have put into to queue
 		$queuehaddata = 1;
-		#database operations to go get block detail
-		my $sql1 = 
-			q{
-			select unblocklog.unblock_when,unblocklog.unblock_who,unblocklog.unblock_why,blocklog.block_ipaddress,blocklog.block_reverse,blocklog.block_who,blocklog.block_why
-			from unblocklog
-			inner join blocklog on blocklog.block_id = unblocklog.unblock_id
-			where unblocklog.unblock_id = ?
-			};
-			my $sth1 = $dbh->prepare($sql1) or die $dbh->errstr;
-		$sth1->execute($_) or die $dbh->errstr;
-		my @unblockedipinfo = $sth1->fetchrow_array();
-		my $notifyidline = ("UNBLOCK - ".$unblockedipinfo[0]." - ".$unblockedipinfo[1]." - ".$unblockedipinfo[2]." - ".$unblockedipinfo[3]." - ".$unblockedipinfo[4]." - Originally Blocked by: ".$unblockedipinfo[5]." for ".$unblockedipinfo[6]);
+
+		my $notifyidline = ("UNBLOCK - ".$unblockrowref->{whenunblock}." - ".$unblockrowref->{whounblock}." - ".$unblockrowref->{whyunblock}." - ".$unblockrowref->{ip}." - ".$unblockrowref->{reverse}." - Originally Blocked by: ".$unblockrowref->{whoblock}." for ".$unblockrowref->{whyblock});
 		$emailbody = $emailbody."\n".$notifyidline;		
 		#alter the log entry to true for notified
 		my $sql2 = 
@@ -764,7 +772,7 @@ sub sub_bhr_digest
 			where unblock_id = ?
 			};
 		my $sth2 = $dbh->prepare($sql2) or die $dbh->errstr;
-		$sth2->execute($_) or die $dbh->errstr;
+		$sth2->execute($unblockrowref->{unblockid}) or die $dbh->errstr;
 		} #close while loop	
 	
 	
