@@ -266,6 +266,11 @@ else # okay we have number of args in correct range, lets do something. Start by
 		{
 		sub_bhr_digest();
 		}
+#test function
+		elsif ($scriptfunciton eq "test")
+		{
+		#sub_test();
+		}
 
 #no valid function was provided
 		
@@ -426,8 +431,8 @@ sub sub_bhr_remove
 		}
 	} #close sub remove
 
-
-sub sub_bhr_list
+#not used anymore
+sub sub_bhr_list_old
 	{
 	my $whoblocked;
 	my $whyblocked;
@@ -444,7 +449,6 @@ sub sub_bhr_list
 	my ($officialbhdips_ref,$forrealbhdips_ref) = sub_get_ips ();
 	my @officialbhdips = @$officialbhdips_ref;
 	my @forrealbhdips = @$forrealbhdips_ref;
-	#my @officialbhdips2 = @officialbhdips;
 	
 	foreach (@officialbhdips)
 		{
@@ -466,10 +470,19 @@ sub sub_bhr_list
 				
 			}
 		} #end for each loop
-	return ;
-	
-	
-	} #close sub list
+	}
+
+sub sub_bhr_list
+	{
+	my ($blocklistwithinfo_ref) = sub_block_list_with_info();
+	my @blocklistwithinfo= @$blocklistwithinfo_ref;
+	my $rowref;
+	while ($rowref = shift(@blocklistwithinfo))
+		{
+		print ($rowref->{ip}."-".$rowref->{who}."-".$rowref->{why}."-".$rowref->{until}."\n");
+		} #end for each loop
+	}
+	 #close sub list test
 
 sub sub_bhr_reconcile
 	{
@@ -571,9 +584,7 @@ sub sub_bhr_cronjob
 		sub_bhr_remove($unblockip,"Block Time Expired","cronjob",$ipversion);
 	};
 	#end of database operations	
-	
-	my ($officialbhdips_ref,$forrealbhdips_ref) = sub_get_ips ();
-	my @officialbhdips = @$officialbhdips_ref;
+
 	my $filehtml="bhlisttemp.html";
 	my $filecsv="bhlisttemp.csv";
 	my $fileprivcsv="bhlistprivtemp.csv";
@@ -590,7 +601,6 @@ sub sub_bhr_cronjob
 	print FILECSV "ip,when,expire\n";
 	print FILEPRIVCSV "ip,who,why,when,expire\n";
 	my $bhrdcount = 0;
-	my $blackholedip;
 	my $whoblocked;
 	my $whenepochblocked;
 	my $tillepochblocked;
@@ -607,39 +617,34 @@ sub sub_bhr_cronjob
 	my $tillblockedday;
 	my $tillblockedmonth;
 	my $tillblockedyear;
-
 	
-	
-	foreach (@officialbhdips)
+	my ($blocklistwithinfo_ref) = sub_block_list_with_info();
+	my @blocklistwithinfo= @$blocklistwithinfo_ref;
+	my $rowref;
+	while ($rowref = shift(@blocklistwithinfo))
 		{
-		if ($_ ne "")
-			{
-			$bhrdcount++;
-			$blackholedip = $_;
-			($whoblocked,$whyblocked,$whenepochblocked,$tillepochblocked) = sub_read_in_ipaddress_log ($blackholedip);
-			($tillblockedsec, $tillblockedmin, $tillblockedhour, $tillblockedday,$tillblockedmonth,$tillblockedyear) = (localtime($tillepochblocked))[0,1,2,3,4,5];
-			($whenblockedsec, $whenblockedmin, $whenblockedhour, $whenblockedday,$whenblockedmonth,$whenblockedyear) = (localtime($whenepochblocked))[0,1,2,3,4,5];
-			$htmltable .=  "<tr>\n".
-			"     <td>".$blackholedip."</td>\n";
-			if($tillepochblocked == 0)
+		$bhrdcount++;
+		($tillblockedsec, $tillblockedmin, $tillblockedhour, $tillblockedday,$tillblockedmonth,$tillblockedyear) = (localtime($rowref->{until}))[0,1,2,3,4,5];
+		($whenblockedsec, $whenblockedmin, $whenblockedhour, $whenblockedday,$whenblockedmonth,$whenblockedyear) = (localtime($rowref->{when}))[0,1,2,3,4,5];
+		$htmltable .=  "<tr>\n".
+			"     <td>".$rowref->{ip}."</td>\n";
+			if($rowref->{until} == 0)
 				{
 				$htmltable .=  "     <td>Block time: ".$months[$whenblockedmonth]." ".$whenblockedday.", ".($whenblockedyear+1900)." ".$whenblockedhour.":".$whenblockedmin.":".$whenblockedsec."</td>\n
 					<td>Blocked indefinitely</td>\n
 					</tr>\n";
-				print FILEPRIVCSV $blackholedip.",".$whoblocked.",".$whyblocked.",".$whenepochblocked.",0\n";
-				print FILECSV $blackholedip.",".$whenepochblocked.",0\n";
+
 				}
 			else
 				{
 				$htmltable .=  "     <td>Block time: ".$months[$whenblockedmonth]." ".$whenblockedday.", ".($whenblockedyear+1900)." ".$whenblockedhour.":".$whenblockedmin.":".$whenblockedsec."</td>\n
 					<td>Block expires: ".$months[$tillblockedmonth]." ".$tillblockedday.", ".($tillblockedyear+1900)." ".$tillblockedhour.":".$tillblockedmin.":".$tillblockedsec."</td>\n
 					</tr>\n";
-				print FILEPRIVCSV $blackholedip.",".$whoblocked.",".$whyblocked.",".$whenepochblocked.",".$tillepochblocked."\n";
-				print FILECSV $blackholedip.",".$whenepochblocked.",".$tillepochblocked."\n";
 				}
-
-			}	#close if
-		} #end for each loop
+			print FILEPRIVCSV $rowref->{ip}.",".$rowref->{who}.",".$rowref->{why}.",".$rowref->{when}.",".$rowref->{until}."\n";
+			print FILECSV $rowref->{ip}.",".$rowref->{when}.",".$rowref->{until}."\n";
+		
+		} #close while loop
 
 		$htmltable .=  "</table>\n";
 		print FILEHTML "<HTML>\n";
@@ -892,6 +897,28 @@ sub sub_what_ip_version
 		}
 	} #close sub what ip version
 
+sub sub_block_list_with_info
+	{
+	#database list blocked ips and info
+	my $sql1 = 
+		q{
+		select blocklog.block_ipaddress AS ip,blocklog.block_who AS who,blocklog.block_why AS why,EXTRACT (EPOCH from blocklog.block_when) AS when,EXTRACT (EPOCH from blocklist.blocklist_until) AS until
+		from blocklist
+		inner join blocklog
+		on blocklog.block_id = blocklist.blocklist_id
+		order by ip
+		};
+	my $sth1 = $dbh->prepare($sql1) or die $dbh->errstr;
+	$sth1->execute() or die $dbh->errstr;
+	my @blocklistwithinfo;
+	my $blocklistwithinfo;
+	while ($blocklistwithinfo = $sth1->fetchrow_hashref())
+		{
+		push (@blocklistwithinfo,$blocklistwithinfo);
+		}
+	#return references to the array
+	return \@blocklistwithinfo;
+	}
 
 sub sub_is_integer_string
 	{
