@@ -442,7 +442,8 @@ sub sub_bhr_list
 		} #end for each loop
 	}
 	 #close sub list test
-
+	 
+	 
 sub sub_bhr_reconcile
 	{
 	
@@ -656,7 +657,7 @@ sub sub_bhr_digest
 			{
 			push (@blockednotifyarray,$blockednotifyarrayrow)
 			};
-	#build list of unblocked IDs that need to be notified
+	#build list of unblocked IDs and info that need to be notified
 		my $sql2 = 
 			q{
 			select blocklog.block_ipaddress AS ip,
@@ -676,10 +677,10 @@ sub sub_bhr_digest
 		$sth2->execute() or die $dbh->errstr;
 		my $unblockactivitycount = $sth2->rows();
 		my @unblockednotifyarray;
-		my $unblocknotifyid;
-		while ($unblocknotifyid = $sth2->fetchrow())
+		my $unblockednotifyarrayrow;
+		while ($unblockednotifyarrayrow = $sth2->fetchrow_hashref())
 			{
-			push (@unblockednotifyarray,$unblocknotifyid)
+			push (@unblockednotifyarray,$unblockednotifyarrayrow)
 			};
 
 	#end of database operations	
@@ -702,14 +703,14 @@ sub sub_bhr_digest
 		$blocknotifyidline = ("BLOCK - ".$blockrowref->{whenblock}." - ".$blockrowref->{who}." - ".$blockrowref->{ip}." - ".$blockrowref->{reverse}." - ".$blockrowref->{why}." - ".$blockrowref->{until});
 		$emailbody = $emailbody."\n".$blocknotifyidline;		
 		#alter the log entry to true for notified
-		my $sql2 = 
+		my $sql3 = 
 			q{
 			update blocklog
 			set block_notified = true
 			where block_id = ?
 			};
-		my $sth2 = $dbh->prepare($sql2) or die $dbh->errstr;
-		$sth2->execute($blockrowref->{blockid}) or die $dbh->errstr;
+		my $sth3 = $dbh->prepare($sql3) or die $dbh->errstr;
+		$sth3->execute($blockrowref->{blockid}) or die $dbh->errstr;
 		} #close while loop		
 	#add unblocked notifications to email body
 	my $unblockrowref;
@@ -721,14 +722,14 @@ sub sub_bhr_digest
 		my $notifyidline = ("UNBLOCK - ".$unblockrowref->{whenunblock}." - ".$unblockrowref->{whounblock}." - ".$unblockrowref->{whyunblock}." - ".$unblockrowref->{ip}." - ".$unblockrowref->{reverse}." - Originally Blocked by: ".$unblockrowref->{whoblock}." for ".$unblockrowref->{whyblock});
 		$emailbody = $emailbody."\n".$notifyidline;		
 		#alter the log entry to true for notified
-		my $sql2 = 
+		my $sql4 = 
 			q{
 			update unblocklog
 			set unblock_notified = true
 			where unblock_id = ?
 			};
-		my $sth2 = $dbh->prepare($sql2) or die $dbh->errstr;
-		$sth2->execute($unblockrowref->{unblockid}) or die $dbh->errstr;
+		my $sth4 = $dbh->prepare($sql4) or die $dbh->errstr;
+		$sth4->execute($unblockrowref->{unblockid}) or die $dbh->errstr;
 		} #close while loop	
 	
 	
@@ -756,18 +757,18 @@ sub sub_bhr_digest
 	if ($sendstats)
 		{
 		#build table of unique blockers and counts
- 		my $sql3 =
+ 		my $sql5 =
 			q{
 			select block_who,count(block_who)
 			from blocklog inner join blocklist
 			on blocklog.block_id = blocklist.blocklist_id
 			group by block_who;
 			};
-		my $sth3 = $dbh->prepare($sql3) or die $dbh->errstr;
-		$sth3->execute() or die $dbh->errstr;
+		my $sth5 = $dbh->prepare($sql5) or die $dbh->errstr;
+		$sth5->execute() or die $dbh->errstr;
 		my $whoblockname;
 		my $whocount;
-		while (($whoblockname,$whocount) = $sth3->fetchrow())
+		while (($whoblockname,$whocount) = $sth5->fetchrow())
 			{
 			system("logger ".$logprepend."_STATS WHO=$whoblockname TOTAL_BLOCKED=$whocount");
 			} close #stat log line create while
@@ -777,6 +778,7 @@ sub sub_bhr_digest
 
 sub sub_get_ips
 	{
+	#returns array references to the IP lists
 	#this sub also always checks to see if the router and database are in sync
 	my @subgetipsofficialbhdips =();
 	#figure out what IPs are in the DB that we say are BHd
@@ -825,7 +827,7 @@ sub sub_get_ips
 	return (\@subgetipsofficialbhdips,\@subgetipsforrealbhdips);
 	} #close get IPs
 
-
+	
 sub sub_read_in_ipaddress_log
 	{
 	#database read in information for a specific IP
