@@ -340,9 +340,9 @@ sub sub_bhr_add
 		$sth1->execute(time(),$ipaddress,$hostname,$servicename,$reason) or die $dbh->errstr;
 		my $ipid = $sth1->fetchrow();
 		my $sql2 =
-		q{
-		INSERT INTO blocklist (blocklist_id,blocklist_until) VALUES (?,to_timestamp(?))
-		};
+			q{
+			INSERT INTO blocklist (blocklist_id,blocklist_until) VALUES (?,to_timestamp(?))
+			};
 		my $sth2 = $dbh->prepare($sql2) or die $dbh->errstr;
 		$sth2->execute($ipid,$endtime) or die $dbh->errstr;	
 		#end of database operations	
@@ -430,47 +430,6 @@ sub sub_bhr_remove
 		print("<p>Nothing to do IP not blackholed<p>\n");
 		}
 	} #close sub remove
-
-#not used anymore
-sub sub_bhr_list_old
-	{
-	my $whoblocked;
-	my $whyblocked;
-	my $whenepochblocked;
-	my $tillepochblocked;
-	my $whenblockedsec;
-	my $whenblockedmin;
-	my $whenblockedhour;
-	my $whenblockedday;
-	my $whenblockedmonth;
-	my $whenblockedyear;
-	my $form1counter;
-	my $blackholedip;
-	my ($officialbhdips_ref,$forrealbhdips_ref) = sub_get_ips ();
-	my @officialbhdips = @$officialbhdips_ref;
-	my @forrealbhdips = @$forrealbhdips_ref;
-	
-	foreach (@officialbhdips)
-		{
-		$form1counter ++;
-		if ($_ ne "")
-			{
-			$blackholedip = $_;
-			($whoblocked,$whyblocked,$whenepochblocked,$tillepochblocked) = sub_read_in_ipaddress_log ($blackholedip);
-			($whenblockedsec, $whenblockedmin, $whenblockedhour, $whenblockedday,$whenblockedmonth,$whenblockedyear) = (localtime($whenepochblocked))[0,1,2,3,4,5];
-			print ($blackholedip."-".$whoblocked."-".$whyblocked);
-			if ($tillepochblocked == 0)
-				{
-				print ("-0\n");
-				}
-			else
-				{
-				print ("-".$tillepochblocked."\n");
-				}
-				
-			}
-		} #end for each loop
-	}
 
 sub sub_bhr_list
 	{
@@ -585,9 +544,6 @@ sub sub_bhr_cronjob
 		my $ipversion = sub_what_ip_version($unblockip);
 		sub_bhr_remove($unblockip,"Block Time Expired","cronjob",$ipversion);
 	};
-
-	
-	
 	
 	#create list files
 	my $filehtml="bhlisttemp.html";
