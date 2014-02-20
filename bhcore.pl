@@ -36,15 +36,13 @@
 use warnings;
 use strict;
 use Data::Validate::IP qw(is_ipv4 is_ipv6);
-#I dont think we are using NetAddr::IP
-#use NetAddr::IP;
 use Email::MIME;
 use Email::Sender::Simple qw(sendmail);
 use Net::DNS;
-use File::stat;
 use DBI;
 use Config::Simple;
-
+use NetAddr::IP;
+#use File::stat; #not being used
 
 #read in config options from an external file
 #config file location
@@ -53,7 +51,6 @@ my $config = new Config::Simple($configfile);
 my $logtosyslog = $config->param('logtosyslog');
 my $logprepend = $config->param('logprepend');
 my $sendstats = $config->param('sendstats');
-my $statprepend = $config->param('statprepend');
 my $emailfrom = $config->param('emailfrom');
 my $emailto = $config->param('emailto');
 my $emailsubject = $config->param('emailsubject');
